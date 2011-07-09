@@ -6,7 +6,7 @@ deps:
 compile:
 	@rebar compile
 
-dialyze: dial_ety dial_dig dial_dlv dial_dnd
+dialyze: all dial_ety dial_dig dial_dlv dial_dnd
 
 dial_ety:
 	dialyzer -Wrace_conditions etdd_yaws/ebin
