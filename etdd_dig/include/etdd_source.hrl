@@ -13,12 +13,14 @@
 %% fields for clearer referencing of summary information
 %% about the source code data.
 -record(etdd_src, {
-          file = ""       :: string(),
-          line_count = 0  :: non_neg_integer(),
-          lines = {}      :: etdd_src_lines(),
-          whitespace = {} :: etdd_src_refs(),
-          comments = {}   :: etdd_src_refs(),
-          directives = {} :: etdd_src_refs(),
-          module = 0      :: non_neg_integer(),
-          behaviour = 0   :: non_neg_integer()
+          file = ""           :: string(),
+          line_count = 0      :: non_neg_integer(),
+          lines = {}          :: etdd_src_lines(),
+          whitespace = {}     :: etdd_src_refs(),
+          comments = {}       :: etdd_src_refs(),
+          directives = {}     :: etdd_src_refs(),
+          module = 0          :: non_neg_integer(),
+          module_type = {}    :: atom() | {},
+          behaviour = 0       :: non_neg_integer(),
+          behaviour_type = {} :: atom() | {}
          }).

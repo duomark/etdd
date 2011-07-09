@@ -163,10 +163,10 @@ delve(File) ->
 -spec skim_lines(string(), list(binary())) -> #etdd_src{}.
 
 skim_lines(File, Lines) ->
-    skim_lines(File, Lines, Lines, 1, [], [], [], 0, 0).
+    skim_lines(File, Lines, Lines, 1, [], [], [], 0, {}, 0, {}).
 
 skim_lines(File, [], Lines, _LineNr, White, Comments, Directives,
-           Module, Behaviour) ->
+           Module, ModType, Behaviour, BehavType) ->
     TupleLines = list_to_tuple(Lines),
     #etdd_src{
                file = File,
@@ -176,22 +176,33 @@ skim_lines(File, [], Lines, _LineNr, White, Comments, Directives,
                comments = list_to_tuple(lists:reverse(Comments)),
                directives = list_to_tuple(lists:reverse(Directives)),
                module = Module,
-               behaviour = Behaviour
+               module_type = ModType,
+               behaviour = Behaviour,
+               behaviour_type = BehavType
              };
-skim_lines(File, [H|T], Lines, LineNr, White, Comments, Directives, Mod, Beh) ->
+skim_lines(File, [H|T], Lines, LineNr, White, Comments, Directives, Mod, ModType, Beh, BehType) ->
     case line_type(H) of
-        whitespace -> skim_lines(File, T, Lines, LineNr+1, [LineNr | White], Comments, Directives, Mod, Beh);
-        comment ->    skim_lines(File, T, Lines, LineNr+1, White, [LineNr | Comments], Directives, Mod, Beh);
-        directive ->  skim_lines(File, T, Lines, LineNr+1, White, Comments, [LineNr | Directives], Mod, Beh);
-        module ->     skim_lines(File, T, Lines, LineNr+1, White, Comments, [LineNr | Directives], LineNr, Beh);
-        behaviour ->  skim_lines(File, T, Lines, LineNr+1, White, Comments, [LineNr | Directives], Mod, LineNr);
-        _Other ->     skim_lines(File, T, Lines, LineNr+1, White, Comments, Directives, Mod, Beh)
+        whitespace ->        skim_lines(File, T, Lines, LineNr+1, [LineNr | White], Comments, Directives, Mod, ModType, Beh, BehType);
+        comment ->           skim_lines(File, T, Lines, LineNr+1, White, [LineNr | Comments], Directives, Mod, ModType, Beh, BehType);
+        directive ->         skim_lines(File, T, Lines, LineNr+1, White, Comments, [LineNr | Directives], Mod, ModType, Beh, BehType);
+        {module, Type} ->    skim_lines(File, T, Lines, LineNr+1, White, Comments, [LineNr | Directives], LineNr, Type, Beh, BehType);
+        {behaviour, Type} -> skim_lines(File, T, Lines, LineNr+1, White, Comments, [LineNr | Directives], Mod, ModType, LineNr, Type);
+        _Other ->            skim_lines(File, T, Lines, LineNr+1, White, Comments, Directives, Mod, ModType, Beh, BehType)
     end.
 
-%% Quick approximation for initial integration testing.
-line_type(<<"-module", _Rest/binary>>)    -> module;
-line_type(<<"-behaviour", _Rest/binary>>) -> behaviour;
-line_type(<<"-", _Rest/binary>>)          -> directive;
-line_type(<<"%", _Rest/binary>>)          -> comment;
-line_type(<<>>)                           -> whitespace;
-line_type(_Other)                         -> other.
+
+%% Module and module type are both extracted in a naive way...
+line_type(<<"-module", Rest/binary>>)    ->
+    Type =  binary:replace(Rest, [<<"(">>,<<" ">>,<<")">>,<<".">>], <<>>, [global]),
+    {module, list_to_atom(binary_to_list(Type))};
+
+%% Behaviour and behaviour type are both extracted in a naive way...
+line_type(<<"-behaviour", Rest/binary>>) ->
+    Type =  binary:replace(Rest, [<<"(">>,<<" ">>,<<")">>,<<".">>], <<>>, [global]),
+    {behaviour, list_to_atom(binary_to_list(Type))};
+
+%% All others are marked with an atom identifying type.
+line_type(<<"-", _Rest/binary>>) -> directive;
+line_type(<<"%", _Rest/binary>>) -> comment;
+line_type(<<>>)                  -> whitespace;
+line_type(_Other)                -> other.

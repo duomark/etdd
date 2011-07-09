@@ -15,7 +15,7 @@
 
 %% API
 -export([start_link/1, get_file/1, src_line_count/1, src_lines/1,
-         mod/1, behav/1]).
+         mod/1, mod_type/1, behav/1, behav_type/1]).
 
 %% gen_server callbacks
 -export([init/1, terminate/2, code_change/3,
@@ -42,15 +42,21 @@ start_link(SourceData) ->
     gen_server:start_link(?MODULE, {SourceData}, []).
 
 
--spec get_file(pid()) -> {get_file, string()}.
+-spec get_file(pid()) ->       {get_file, string()}.
 -spec src_line_count(pid()) -> {src_line_count, non_neg_integer()}.
--spec src_lines(pid()) -> {src_lines, tuple(binary())}.
+-spec src_lines(pid()) ->      {src_lines, tuple(binary())}.
+-spec mod(pid()) ->            {mod, non_neg_integer(), binary()}.
+-spec mod_type(pid()) ->       {mod_type, atom() | {}}.
+-spec behav(pid()) ->          {behav, non_neg_integer(), binary()}.
+-spec behav_type(pid()) ->     {behav_type, atom() | {}}.
 
 get_file(Pid) ->       gen_server:call(Pid, get_file).
 src_line_count(Pid) -> gen_server:call(Pid, src_line_count).
 src_lines(Pid) ->      gen_server:call(Pid, src_lines).
 mod(Pid) ->            gen_server:call(Pid, mod).
+mod_type(Pid) ->       gen_server:call(Pid, mod_type).
 behav(Pid) ->          gen_server:call(Pid, behav).
+behav_type(Pid) ->     gen_server:call(Pid, behav_type).
 
 
 %%%===================================================================
@@ -74,21 +80,25 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 -type call_rqst()  :: get_file | src_line_count | src_lines
-                    | module | behaviour.
+                    | module | mod_type | behaviour | behav_type.
 -type call_reply() :: {get_file, string()}
                     | {src_line_count, non_neg_integer()}
                     | {src_lines, #etdd_src{}}
                     | {module, non_neg_integer(), binary()}
+                    | {mod_type, atom() | {}}
                     | {behaviour, non_neg_integer(), binary()}
+                    | {behav_type, atom() | {}}
                     | ignored.
 
 -spec handle_call(call_rqst(), {pid(), reference()}, #dlv_state{})
                  -> {reply, call_reply(), #dlv_state{}}.
 
 %% Report simple field information about the current code analysis.
-?HC(get_file,       file, File) ->        {reply, {get_file, File},        State};
-?HC(src_line_count, line_count, Count) -> {reply, {src_line_count, Count}, State};
-?HC(src_lines,      lines, Lines) ->      {reply, {src_lines, Lines},      State};
+?HC(get_file,       file, File) ->            {reply, {get_file, File},        State};
+?HC(src_line_count, line_count, Count) ->     {reply, {src_line_count, Count}, State};
+?HC(src_lines,      lines, Lines) ->          {reply, {src_lines, Lines},      State};
+?HC(mod_type,       module_type, Lines) ->    {reply, {mod_type, Lines},       State};
+?HC(behav_type,     behaviour_type, Lines) -> {reply, {beh_type, Lines},       State};
 
 %% Report information about the current code analysis involving a specific line of code.
 ?HCL(mod,   module, LineNr) ->    {reply, {mod,   LineNr, element(LineNr, Src)}, State};
