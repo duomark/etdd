@@ -68,22 +68,20 @@ cd to the top level directory and perform the following commands:
 
   6> etdd_dlv_server:src_lines(v(4)).
 
-  {{
-  {src_lines,{<<"-module(dig_and_delve_app).">>,<<>>,
-            <<"-behaviour(application).">>,<<>>,
-            <<"%% Application callbacks">>,
-            <<"-export([start/0, start/2, stop/1]).">>,<<>>,
-            <<"%% ===================================================================">>,
-            <<"%% Application callbacks">>,
-            <<"%% ================================================================="...>>,
-            <<>>,<<"-spec start() -> {ok, pid()}.">>,
-            <<"-spec start(any(), any()) -> {ok, pid()}.">>,
-            <<"-spec stop([]) -> ok.">>,<<>>,
-            <<"%% @doc Start the application's root supervi"...>>,
-            <<"start() ->">>,<<"    dig_and_delve_sup:start_link().">>,
-            <<>>,<<"%% @doc Start the applicatio"...>>,
-            <<"start(_StartType, _Start"...>>,<<"    dig_and_delve_su"...>>,
-            <<>>,<<"%% @doc Stop"...>>,<<"stop(_St"...>>,<<>>}}
-  }}
+  > {src_lines,{<<"-module(dig_and_delve_app).">>,<<>>,
+  >             <<"-behaviour(application).">>,<<>>,
+  >             <<"%% Application callbacks">>,
+  >             <<"-export([start/0, start/2, stop/1]).">>,<<>>,
+  >             <<"%% ===================================================================">>,
+  >             <<"%% Application callbacks">>,
+  >             <<"%% ================================================================="...>>,
+  >             <<>>,<<"-spec start() -> {ok, pid()}.">>,
+  >             <<"-spec start(any(), any()) -> {ok, pid()}.">>,
+  >             <<"-spec stop([]) -> ok.">>,<<>>,
+  >             <<"%% @doc Start the application's root supervi"...>>,
+  >             <<"start() ->">>,<<"    dig_and_delve_sup:start_link().">>,
+  >             <<>>,<<"%% @doc Start the applicatio"...>>,
+  >             <<"start(_StartType, _Start"...>>,<<"    dig_and_delve_su"...>>,
+  >             <<>>,<<"%% @doc Stop"...>>,<<"stop(_St"...>>,<<>>}}
 
   7> init:stop().
