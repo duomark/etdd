@@ -18,5 +18,7 @@
           lines = {}      :: etdd_src_lines(),
           whitespace = {} :: etdd_src_refs(),
           comments = {}   :: etdd_src_refs(),
-          directives = {} :: etdd_src_refs()
+          directives = {} :: etdd_src_refs(),
+          module = 0      :: non_neg_integer(),
+          behaviour = 0   :: non_neg_integer()
          }).

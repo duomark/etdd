@@ -14,7 +14,8 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/1, get_file/1, src_line_count/1, src_lines/1]).
+-export([start_link/1, get_file/1, src_line_count/1, src_lines/1,
+         mod/1, behav/1]).
 
 %% gen_server callbacks
 -export([init/1, terminate/2, code_change/3,
@@ -25,6 +26,10 @@
 -record(dlv_state, {
           src_code :: #etdd_src{}
          }).
+
+%% Macro hacks to clean up repetitive code
+-define(HC(RQST, FLD, VAL),     handle_call(RQST, _From, #dlv_state{src_code=#etdd_src{FLD=VAL}} = State)).
+-define(HCL(RQST, FLD, LINENR), handle_call(RQST, _From, #dlv_state{src_code=#etdd_src{FLD=LINENR, lines=Src}} = State)).
 
 
 %%%===================================================================
@@ -41,9 +46,11 @@ start_link(SourceData) ->
 -spec src_line_count(pid()) -> {src_line_count, non_neg_integer()}.
 -spec src_lines(pid()) -> {src_lines, tuple(binary())}.
 
-get_file(Pid) -> gen_server:call(Pid, get_file).
+get_file(Pid) ->       gen_server:call(Pid, get_file).
 src_line_count(Pid) -> gen_server:call(Pid, src_line_count).
-src_lines(Pid) -> gen_server:call(Pid, src_lines).
+src_lines(Pid) ->      gen_server:call(Pid, src_lines).
+mod(Pid) ->            gen_server:call(Pid, mod).
+behav(Pid) ->          gen_server:call(Pid, behav).
 
 
 %%%===================================================================
@@ -66,26 +73,29 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%% handle message callbacks
 %%%===================================================================
 
--type call_rqst()  :: get_file | src_line_count | src_lines.
+-type call_rqst()  :: get_file | src_line_count | src_lines
+                    | module | behaviour.
 -type call_reply() :: {get_file, string()}
                     | {src_line_count, non_neg_integer()}
                     | {src_lines, #etdd_src{}}
+                    | {module, non_neg_integer(), binary()}
+                    | {behaviour, non_neg_integer(), binary()}
                     | ignored.
 
 -spec handle_call(call_rqst(), {pid(), reference()}, #dlv_state{})
                  -> {reply, call_reply(), #dlv_state{}}.
 
-handle_call(get_file, _From,
-            #dlv_state{src_code=#etdd_src{file=File}} = State) ->
-    {reply, {get_file, File}, State};
-handle_call(src_line_count, _From,
-            #dlv_state{src_code=#etdd_src{line_count=Count}} = State) ->
-    {reply, {src_line_count, Count}, State};
-handle_call(src_lines, _From,
-            #dlv_state{src_code=#etdd_src{lines=Lines}} = State) ->
-    {reply, {src_lines, Lines}, State};
-handle_call(_Request, _From, State) ->
-    {reply, ignored, State}.
+%% Report simple field information about the current code analysis.
+?HC(get_file,       file, File) ->        {reply, {get_file, File},        State};
+?HC(src_line_count, line_count, Count) -> {reply, {src_line_count, Count}, State};
+?HC(src_lines,      lines, Lines) ->      {reply, {src_lines, Lines},      State};
+
+%% Report information about the current code analysis involving a specific line of code.
+?HCL(mod,   module, LineNr) ->    {reply, {mod,   LineNr, element(LineNr, Src)}, State};
+?HCL(behav, behaviour, LineNr) -> {reply, {behav, LineNr, element(LineNr, Src)}, State};
+    
+%% Ignore all other requests silently.
+handle_call(_Request, _From, State) -> {reply, ignored, State}.
 
 
 -spec handle_cast(any(), #dlv_state{}) -> {noreply, #dlv_state{}}.
