@@ -19,13 +19,14 @@ gc:
 	@rm -f */*/*/*~
 
 rel: all
-	@echo 'Generating etdd release'
+	@echo 'Generating dig_and_delve release'
 	@(cd rel; rebar generate)
 
-clean:
+clean: gc
 	@rebar clean
 
 relclean:
+	@rm -f rel/erl_crash.dump
 	@rm -rf rel/etdd
 
 realclean: clean relclean
