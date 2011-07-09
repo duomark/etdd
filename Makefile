@@ -16,6 +16,7 @@ gc:
 	@rm -f *~
 	@rm -f */*~
 	@rm -f */*/*~
+	@rm -f */*/*/*~
 
 rel: all
 	@echo 'Generating etdd release'

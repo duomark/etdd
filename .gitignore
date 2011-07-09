@@ -1,0 +1,14 @@
+*~
+*/*~
+*/*/*~
+*/*/*/*~
+erl_crash.dump
+*/erl_crash.dump
+*/*/erl_crash.dump
+*/*/*/erl_crash.dump
+*/ebin
+*/test/*.beam
+*/src/*.beam
+*/.eunit
+rel/etdd/
+deps/
