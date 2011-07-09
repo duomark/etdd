@@ -1,0 +1,10 @@
+{application,etdd_dig,
+             [{id,"ETDD-dig"},
+              {vsn,"0.0.1"},
+              {description,"Code finding server"},
+              {modules,[etdd_dig_app,etdd_dig_server,etdd_dig_sup]},
+              {registered,[etdd_dig_app,etdd_dig_sup,etdd_dig_server]},
+              {applications,[kernel,stdlib,sasl,gs,appmon]},
+              {included_applications,[]},
+              {mod,{etdd_dig_app,[]}},
+              {env,[]}]}.

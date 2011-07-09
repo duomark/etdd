@@ -6,10 +6,19 @@ deps:
 compile:
 	@rebar compile
 
-dialyze: dial_ety
+dialyze: dial_ety dial_dig dial_dlv dial_dnd
 
 dial_ety:
 	dialyzer -Wrace_conditions etdd_yaws/ebin
+
+dial_dig:
+	dialyzer -Wrace_conditions etdd_dig/ebin
+
+dial_dlv:
+	dialyzer -Wrace_conditions etdd_dlv/ebin
+
+dial_dnd:
+	dialyzer -Wrace_conditions dig_and_delve/ebin
 
 gc:
 	@echo 'Removing all emacs backup files'
@@ -27,7 +36,7 @@ clean: gc
 
 relclean:
 	@rm -f rel/erl_crash.dump
-	@rm -rf rel/etdd
+	@rm -rf rel/dig_and_delve
 
 realclean: clean relclean
 	@rebar del-deps

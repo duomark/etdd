@@ -13,7 +13,7 @@
     gs,
     appmon
    ]},
-  {included_applications, [yaws, etdd_yaws]},
+  {included_applications, []},
   {mod, {etdd_dig_app, []}},
   {env, []}
 ]}.

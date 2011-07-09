@@ -27,7 +27,6 @@ start_link() ->
 %% ===================================================================
 
 init({}) ->
-    YawsSup = ?SUPER(etdd_yaws_sup, []),
     DigServer = ?CHILD(etdd_dig_server, []),
-    {ok, { {one_for_one, 5, 10}, [YawsSup, DigServer]} }.
+    {ok, { {one_for_one, 5, 10}, [DigServer]} }.
 

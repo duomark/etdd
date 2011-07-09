@@ -1,0 +1,19 @@
+{application, dig_and_delve,
+ [
+  {id,  "Dig-And-Delve"},
+  {vsn, "0.0.1"},
+  {description, "Erlang code browser"},
+  {modules, []},
+  {registered, [dig_and_delve_app, dig_and_delve_sup]},
+  {applications,
+   [
+    kernel,
+    stdlib,
+    sasl,
+    gs,
+    appmon
+   ]},
+  {included_applications, [yaws, etdd_yaws, etdd_dig, etdd_dlv]},
+  {mod, {dig_and_delve_app, []}},
+  {env, []}
+]}.
