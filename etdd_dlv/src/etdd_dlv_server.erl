@@ -15,7 +15,7 @@
 
 %% API
 -export([start_link/1, get_file/1, src_line_count/1, src_lines/1,
-         mod/1, mod_type/1, behav/1, behav_type/1]).
+         mod/1, mod_type/1, behav/1, behav_type/1, summary/1]).
 
 %% gen_server callbacks
 -export([init/1, terminate/2, code_change/3,
@@ -49,6 +49,7 @@ start_link(SourceData) ->
 -spec mod_type(pid()) ->       {mod_type, atom() | {}}.
 -spec behav(pid()) ->          {behav, non_neg_integer(), binary()}.
 -spec behav_type(pid()) ->     {behav_type, atom() | {}}.
+-spec summary(pid()) ->        {summary, list(tuple())}.
 
 get_file(Pid) ->       gen_server:call(Pid, get_file).
 src_line_count(Pid) -> gen_server:call(Pid, src_line_count).
@@ -57,6 +58,11 @@ mod(Pid) ->            gen_server:call(Pid, mod).
 mod_type(Pid) ->       gen_server:call(Pid, mod_type).
 behav(Pid) ->          gen_server:call(Pid, behav).
 behav_type(Pid) ->     gen_server:call(Pid, behav_type).
+
+summary(Pid) ->
+    {summary, 
+     [gen_server:call(Pid, Msg)
+      || Msg <- [behav_type, mod_type, get_file, src_line_count]]}.
 
 
 %%%===================================================================
@@ -98,7 +104,7 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 ?HC(src_line_count, line_count, Count) ->     {reply, {src_line_count, Count}, State};
 ?HC(src_lines,      lines, Lines) ->          {reply, {src_lines, Lines},      State};
 ?HC(mod_type,       module_type, Lines) ->    {reply, {mod_type, Lines},       State};
-?HC(behav_type,     behaviour_type, Lines) -> {reply, {beh_type, Lines},       State};
+?HC(behav_type,     behaviour_type, Lines) -> {reply, {behav_type, Lines},     State};
 
 %% Report information about the current code analysis involving a specific line of code.
 ?HCL(mod,   module, LineNr) ->    {reply, {mod,   LineNr, element(LineNr, Src)}, State};

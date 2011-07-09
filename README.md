@@ -45,42 +45,64 @@ cd to the top level directory and perform the following commands:
 
   rel/dig_and_delve/bin/dig_and_delve console
 
-  1> etdd_dig_server:load_file("/Users/jay/Git/etdd/dig_and_delve/src/dig_and_delve_app.erl").
+  1> [etdd_dig_server:load_dir("../../" ++ D) || D <- ["dig_and_delve/src/","etdd_dig/src/","etdd_dlv/src/"]].
 
   > ok
 
   2> etdd_dig_server:files_loaded().
 
-  > {files_loaded,[{{1310,208701,416696},
-  >               "/Users/jay/Git/etdd/dig_and_delve/src/dig_and_delve_app.erl"}]}
+  > {files_loaded,[{{1310,252709,226305},
+  >                 "../../etdd_dlv/src/etdd_dlv_sup.erl"},
+  >                {{1310,252709,226775},
+  >                 "../../etdd_dlv/src/etdd_dlv_server.erl"},
+  >                {{1310,252709,227120},"../../etdd_dlv/src/etdd_dlv_app.erl"},
+  >                {{1310,252709,224991},"../../etdd_dig/src/etdd_dig_sup.erl"},
+  >                {{1310,252709,225640},
+  >                 "../../etdd_dig/src/etdd_dig_server.erl"},
+  >                {{1310,252709,225842},"../../etdd_dig/src/etdd_dig_app.erl"},
+  >                {{1310,252709,224110},
+  >                 "../../dig_and_delve/src/dig_and_delve_sup.erl"},
+  >                {{1310,252709,224535},
+  >                 "../../dig_and_delve/src/dig_and_delve_app.erl"}]}
 
-  3> etdd_dig_server:find_file("/Users/jay/Git/etdd/dig_and_delve/src/dig_and_delve_app.erl").
+  3> [etdd_dig_server:find_file(element(2,T)) || T <- element(2,v(2))].
 
-  > {find_file,<0.76.0>}
+  > [{find_file,<0.84.0>}, {find_file,<0.85.0>}, {find_file,<0.86.0>},
+  >  {find_file,<0.81.0>}, {find_file,<0.82.0>}, {find_file,<0.83.0>},
+  >  {find_file,<0.79.0>}, {find_file,<0.80.0>}]
 
-  4> Pid = element(2, v(3)).
+  4> [etdd_dlv_server:summary(element(2,P)) || P <- v(3)].
 
-  > <0.76.0>
-
-  5> etdd_dlv_server:src_line_count(v(4)).
-
-  > {src_line_count,26}
-
-  6> etdd_dlv_server:src_lines(v(4)).
-
-  > {src_lines,{<<"-module(dig_and_delve_app).">>,<<>>,
-  >             <<"-behaviour(application).">>,<<>>,
-  >             <<"%% Application callbacks">>,
-  >             <<"-export([start/0, start/2, stop/1]).">>,<<>>,
-  >             <<"%% ===================================================================">>,
-  >             <<"%% Application callbacks">>,
-  >             <<"%% ================================================================="...>>,
-  >             <<>>,<<"-spec start() -> {ok, pid()}.">>,
-  >             <<"-spec start(any(), any()) -> {ok, pid()}.">>,
-  >             <<"-spec stop([]) -> ok.">>,<<>>,
-  >             <<"%% @doc Start the application's root supervi"...>>,
-  >             <<"start() ->">>,<<"    dig_and_delve_sup:start_link().">>,
-  >             <<>>,<<"%% @doc Start the applicatio"...>>,
-  >             <<"start(_StartType, _Start"...>>,<<"    dig_and_delve_su"...>>,
-  >             <<>>,<<"%% @doc Stop"...>>,<<"stop(_St"...>>,<<>>}}
+  [{summary,[{behav_type,supervisor},
+           {mod_type,etdd_dlv_sup},
+           {get_file,"../../etdd_dlv/src/etdd_dlv_sup.erl"},
+           {src_line_count,65}]},
+   {summary,[{behav_type,gen_server},
+           {mod_type,etdd_dlv_server},
+           {get_file,"../../etdd_dlv/src/etdd_dlv_server.erl"},
+           {src_line_count,127}]},
+   {summary,[{behav_type,application},
+           {mod_type,etdd_dlv_app},
+           {get_file,"../../etdd_dlv/src/etdd_dlv_app.erl"},
+           {src_line_count,26}]},
+   {summary,[{behav_type,supervisor},
+           {mod_type,etdd_dig_sup},
+           {get_file,"../../etdd_dig/src/etdd_dig_sup.erl"},
+           {src_line_count,36}]},
+   {summary,[{behav_type,gen_server},
+           {mod_type,etdd_dig_server},
+           {get_file,"../../etdd_dig/src/etdd_dig_server.erl"},
+           {src_line_count,225}]},
+   {summary,[{behav_type,application},
+           {mod_type,etdd_dig_app},
+           {get_file,"../../etdd_dig/src/etdd_dig_app.erl"},
+           {src_line_count,26}]},
+   {summary,[{behav_type,supervisor},
+           {mod_type,dig_and_delve_sup},
+           {get_file,"../../dig_and_delve/src/dig_and_delve_sup.erl"},
+           {src_line_count,36}]},
+   {summary,[{behav_type,application},
+           {mod_type,dig_and_delve_app},
+           {get_file,"../../dig_and_delve/src/dig_and_delve_app.erl"},
+           {src_line_count,26}]}]
 

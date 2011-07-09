@@ -13,7 +13,8 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, load_file/1, loaded_file/2, find_file/1, files_loaded/0]).
+-export([start_link/0, load_dir/1, load_file/1,
+         loaded_file/2, find_file/1, files_loaded/0]).
 
 %% gen_server callbacks
 -export([init/1, terminate/2, code_change/3,
@@ -50,6 +51,7 @@ start_link() ->
 -spec load_file(string()) -> ok.
 -spec loaded_file(string(), pid()) -> ok.
 
+load_dir(Dir) ->          gen_server:cast(?SERVER, {load_dir, Dir}).
 load_file(File) ->        gen_server:cast(?SERVER, {load_file, File}).
 loaded_file(File, Pid) -> gen_server:cast(?SERVER, {loaded_file, File, Pid}).
 
@@ -103,12 +105,26 @@ handle_call(_Request, _From, State) ->
     {reply, ok, State}.
 
 
--type cast_rqst() :: {load_file, string()}
+-type cast_rqst() :: {load_dir, string()}
+                   | {load_file, string()}
                    | {loaded_file, string(), pid()}
                    | any().
 -spec handle_cast(cast_rqst(), #dig_state{}) -> {noreply, #dig_state{}}.
 
-%% Spawn a process to load a source file and hand it to a delve worker.
+%% Spawn a delve worker process to analyze each source file in a dir.
+handle_cast({load_dir, Dir},
+            #dig_state{files_loaded=FilesLoaded} = State) ->
+    NewFiles = case file:list_dir(Dir) of 
+                   {error, _Any} -> FilesLoaded;
+                   {ok, Files} ->
+                       %% proc_lib:spawn_link(?MODULE, delve, [File]),
+                       Srcs = [begin Fname = Dir ++ F, delve(Fname), {now(), Fname} end
+                               || F <- Files, string:sub_string(F, length(F)-3) == ".erl"],
+                       lists:append(Srcs, FilesLoaded)
+               end,
+    {noreply, State#dig_state{files_loaded=NewFiles}};
+
+%% Spawn a delve worker process to analyze a source file.
 handle_cast({load_file, File},
             #dig_state{files_loaded=FilesLoaded} = State) ->
 %%    proc_lib:spawn_link(?MODULE, delve, [File]),
