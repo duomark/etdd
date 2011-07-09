@@ -15,7 +15,9 @@
 
 %% API
 -export([start_link/1, get_file/1, src_line_count/1, src_lines/1,
-         mod/1, mod_type/1, behav/1, behav_type/1, summary/1]).
+         comm_count/1, white_count/1, directive_count/1,
+         mod/1, mod_type/1, behav/1, behav_type/1,
+         summary/1]).
 
 %% gen_server callbacks
 -export([init/1, terminate/2, code_change/3,
@@ -42,27 +44,43 @@ start_link(SourceData) ->
     gen_server:start_link(?MODULE, {SourceData}, []).
 
 
--spec get_file(pid()) ->       {get_file, string()}.
--spec src_line_count(pid()) -> {src_line_count, non_neg_integer()}.
--spec src_lines(pid()) ->      {src_lines, tuple(binary())}.
--spec mod(pid()) ->            {mod, non_neg_integer(), binary()}.
--spec mod_type(pid()) ->       {mod_type, atom() | {}}.
--spec behav(pid()) ->          {behav, non_neg_integer(), binary()}.
--spec behav_type(pid()) ->     {behav_type, atom() | {}}.
--spec summary(pid()) ->        {summary, list(tuple())}.
+-spec get_file(pid()) ->        {get_file, string()}.
+-spec src_line_count(pid()) ->  {src_line_count, non_neg_integer()}.
+-spec src_lines(pid()) ->       {src_lines, tuple(binary())}.
+-spec mod(pid()) ->             {mod, non_neg_integer(), binary()}.
+-spec mod_type(pid()) ->        {mod_type, atom() | {}}.
+-spec behav(pid()) ->           {behav, non_neg_integer(), binary()}.
+-spec behav_type(pid()) ->      {behav_type, atom() | {}}.
+-spec comm_count(pid()) ->      {comm_count, non_neg_integer()}.
+-spec white_count(pid()) ->     {white_count, non_neg_integer()}.
+-spec directive_count(pid()) -> {comm_count, non_neg_integer()}.
+-spec summary(pid()) ->         {summary, list(tuple())}.
 
-get_file(Pid) ->       gen_server:call(Pid, get_file).
-src_line_count(Pid) -> gen_server:call(Pid, src_line_count).
-src_lines(Pid) ->      gen_server:call(Pid, src_lines).
-mod(Pid) ->            gen_server:call(Pid, mod).
-mod_type(Pid) ->       gen_server:call(Pid, mod_type).
-behav(Pid) ->          gen_server:call(Pid, behav).
-behav_type(Pid) ->     gen_server:call(Pid, behav_type).
+get_file(Pid) ->        gen_server:call(Pid, get_file).
+src_line_count(Pid) ->  gen_server:call(Pid, src_line_count).
+src_lines(Pid) ->       gen_server:call(Pid, src_lines).
+mod(Pid) ->             gen_server:call(Pid, mod).
+mod_type(Pid) ->        gen_server:call(Pid, mod_type).
+behav(Pid) ->           gen_server:call(Pid, behav).
+behav_type(Pid) ->      gen_server:call(Pid, behav_type).
+comm_count(Pid) ->      gen_server:call(Pid, comm_count).
+white_count(Pid) ->     gen_server:call(Pid, white_count).
+directive_count(Pid) -> gen_server:call(Pid, directive_count).
 
 summary(Pid) ->
-    {summary, 
-     [gen_server:call(Pid, Msg)
-      || Msg <- [behav_type, mod_type, get_file, src_line_count]]}.
+    PctAttrs = compute_code_ratios(Pid),
+    {summary,
+     PctAttrs ++
+         [gen_server:call(Pid, Msg)
+          || Msg <- [behav_type, mod_type, get_file, src_line_count]]}.
+
+compute_code_ratios(Pid) ->
+    Counts = [element(2, gen_server:call(Pid, Msg))
+              || Msg <- [comm_count, white_count, directive_count]],
+    {src_line_count, SLC} = gen_server:call(Pid, src_line_count),
+    Pcts = [round(C / SLC * 100) || C <- Counts],
+    Code = 100 - lists:sum(Pcts),
+    lists:zip([code_pct, comm_pct, white_pct, directive_pct], [Code | Pcts]).
 
 
 %%%===================================================================
@@ -86,14 +104,19 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 %%%===================================================================
 
 -type call_rqst()  :: get_file | src_line_count | src_lines
-                    | module | mod_type | behaviour | behav_type.
+                    | mod | mod_type | behav | behav_type
+                    | comm_count | white_count | directive_count.
+
 -type call_reply() :: {get_file, string()}
                     | {src_line_count, non_neg_integer()}
                     | {src_lines, #etdd_src{}}
-                    | {module, non_neg_integer(), binary()}
+                    | {mod, non_neg_integer(), binary()}
                     | {mod_type, atom() | {}}
-                    | {behaviour, non_neg_integer(), binary()}
+                    | {behav, non_neg_integer(), binary()}
                     | {behav_type, atom() | {}}
+                    | {comm_count, non_neg_integer()}
+                    | {white_count, non_neg_integer()}
+                    | {directive_count, non_neg_integer()}
                     | ignored.
 
 -spec handle_call(call_rqst(), {pid(), reference()}, #dlv_state{})
@@ -105,6 +128,11 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 ?HC(src_lines,      lines, Lines) ->          {reply, {src_lines, Lines},      State};
 ?HC(mod_type,       module_type, Lines) ->    {reply, {mod_type, Lines},       State};
 ?HC(behav_type,     behaviour_type, Lines) -> {reply, {behav_type, Lines},     State};
+
+%% Report line counts based on source code line type.
+?HC(comm_count,      comments, Comms) ->    {reply, {comm_count,      tuple_size(Comms)},  State};
+?HC(white_count,     whitespace, White) ->  {reply, {white_count,     tuple_size(White)},  State};
+?HC(directive_count, directives, Direct) -> {reply, {directive_count, tuple_size(Direct)}, State};
 
 %% Report information about the current code analysis involving a specific line of code.
 ?HCL(mod,   module, LineNr) ->    {reply, {mod,   LineNr, element(LineNr, Src)}, State};
