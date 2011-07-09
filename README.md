@@ -47,24 +47,24 @@ cd to the top level directory and perform the following commands:
 
   1> etdd_dig_server:load_file("/Users/jay/Git/etdd/dig_and_delve/src/dig_and_delve_app.erl").
 
-  ok
+  > ok
 
   2> etdd_dig_server:files_loaded().
 
-  {files_loaded,[{{1310,208701,416696},
-                "/Users/jay/Git/etdd/dig_and_delve/src/dig_and_delve_app.erl"}]}
+  > {files_loaded,[{{1310,208701,416696},
+  >               "/Users/jay/Git/etdd/dig_and_delve/src/dig_and_delve_app.erl"}]}
 
   3> etdd_dig_server:find_file("/Users/jay/Git/etdd/dig_and_delve/src/dig_and_delve_app.erl").
 
-  {find_file,<0.76.0>}
+  > {find_file,<0.76.0>}
 
   4> Pid = element(2, v(3)).
 
-  <0.76.0>
+  > <0.76.0>
 
   5> etdd_dlv_server:src_line_count(v(4)).
 
-  {src_line_count,26}
+  > {src_line_count,26}
 
   6> etdd_dlv_server:src_lines(v(4)).
 
@@ -84,4 +84,3 @@ cd to the top level directory and perform the following commands:
   >             <<"start(_StartType, _Start"...>>,<<"    dig_and_delve_su"...>>,
   >             <<>>,<<"%% @doc Stop"...>>,<<"stop(_St"...>>,<<>>}}
 
-  7> init:stop().
