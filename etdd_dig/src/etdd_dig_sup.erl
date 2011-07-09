@@ -12,19 +12,22 @@
 -define(CHILD(I, ARGS), {I, {I, start_link, ARGS}, permanent, 5000, worker, [I]}).
 -define(SUPER(I, ARGS), {I, {I, start_link, ARGS}, permanent, infinity, supervisor, [I]}).
 
--spec start_link() -> {ok, pid()}.
--spec init(Args::{}) -> {ok, any()}.
 
 %% ===================================================================
 %% API functions
 %% ===================================================================
 
+-spec start_link() -> {ok, pid()}.
+
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, {}).
+
 
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
+
+-spec init(Args::{}) -> {ok, any()}.
 
 init({}) ->
     DigServer = ?CHILD(etdd_dig_server, []),
