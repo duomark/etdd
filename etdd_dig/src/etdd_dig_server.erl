@@ -207,6 +207,14 @@ skim_lines(File, [H|T], Lines, LineNr, White, Comments, Directives, Mod, ModType
     end.
 
 
+%% If all whitespace was thrown away and nothing left, it was a whitespace line...
+line_type(<<>>)                  -> whitespace;
+line_type(<<" ", Rest/binary>>)  -> line_type(Rest);
+line_type(<<"\t", Rest/binary>>) -> line_type(Rest);
+
+%% If first non-whitespace character is a '%' then it is a comment...
+line_type(<<"%", _Rest/binary>>) -> comment;
+
 %% Module and module type are both extracted in a naive way...
 line_type(<<"-module", Rest/binary>>)    ->
     Type =  binary:replace(Rest, [<<"(">>,<<" ">>,<<")">>,<<".">>], <<>>, [global]),
@@ -219,6 +227,4 @@ line_type(<<"-behaviour", Rest/binary>>) ->
 
 %% All others are marked with an atom identifying type.
 line_type(<<"-", _Rest/binary>>) -> directive;
-line_type(<<"%", _Rest/binary>>) -> comment;
-line_type(<<>>)                  -> whitespace;
 line_type(_Other)                -> other.
