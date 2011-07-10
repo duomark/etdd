@@ -1,4 +1,15 @@
+%%%-------------------------------------------------------------------
+%%% @copyright (c) 2011, DuoMark International, Inc.  All rights reserved
+%%% @author Jay Nelson <jay@duomark.com>
+%%% @doc
+%%%   The etdd_yaws_app is used for standalone launch of the 
+%%%   yaws as an embedded server.
+%%% @since v0.0.1
+%%% @end
+%%%-------------------------------------------------------------------
 -module(etdd_yaws_app).
+-copyright("(c) 2011, DuoMark International, Inc.  All rights reserved").
+-author(jayn).
 
 -behaviour(application).
 
