@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<head>
+  <title>ETDD Loaded Source Files</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/css/reset.css" media="screen, projection">
+  <link rel="stylesheet" href="/css/theme.css" media="screen, projection">
+</head>
+<body>
+  <div id="page">
+    <div class="desc section">
+      <div class="main">
+
+<erl>
+out(A) ->
+  case postvar(A, "source") of
+    undefined -> {ehtml, {p, [], ["You must enter a file or directory name"]}};
+    {ok, Req} ->
+      case file_type(Req) of
+        dir  ->  etdd_dig_server:load_src_dir(Req),  show_file_list();
+        file ->  etdd_dig_server:load_src_file(Req), show_file_list();
+        invalid -> 
+          {ehtml,
+            {p,[], ["You selected directory ", Req,
+                    " which is neither a valid file nor a directory.",
+                    " (Note: files must end in '.erl' or '.app.src' ",
+                    " whilst directories must end with '/')"]}}
+      end
+  end.
+
+file_type(Entry) ->
+  Len = length(Entry),
+  Last = Entry == "" orelse lists:last(Entry),
+  Tail3 = Len > 3 andalso string:sub_string(Entry, Len-3),
+  Tail7 = Len > 7 andalso string:sub_string(Entry, Len-7),
+  if
+    Tail7 == ".app.src" -> file;
+    Tail3 == ".erl" -> file;
+    Last =:= $/ -> dir;
+    true -> invalid
+  end.
+
+show_file_list() ->
+  {files_loaded, FL} = etdd_dig_server:files_loaded(),
+  FileList = make_file_list(FL),
+  {ehtml, {ul, [], ["/r/n", FileList]}}.
+
+make_file_list(FilesLoaded) ->
+  FileList = [
+    ["<li><a href=\"file_etdd.yaws?file=", F, "\">", F, "</a></li>\r\n"]
+    || {_Time, F} <- FilesLoaded].
+
+</erl>
+
+      </div> <!-- /end .main -->
+
+      <div class="sidebar">
+      </div> <!-- /end .sidebar -->
+
+    </div> <!-- /end .desc.section -->
+  </div> <!-- /end #page -->
+</body>
+</html>
