@@ -17,7 +17,7 @@
 -export([start_link/1, get_file/1, src_line_count/1, src_lines/1,
          comm_count/1, white_count/1, directive_count/1,
          mod/1, mod_type/1, behav/1, behav_type/1,
-         summary/1]).
+         code_ratios/1, summary/1]).
 
 %% gen_server callbacks
 -export([init/1, terminate/2, code_change/3,
@@ -55,6 +55,7 @@ start_link(SourceData) ->
 -spec white_count(pid()) ->     {white_count, non_neg_integer()}.
 -spec directive_count(pid()) -> {comm_count, non_neg_integer()}.
 -spec summary(pid()) ->         {summary, list(tuple())}.
+-spec code_ratios(pid()) ->     {code_ratios, list(tuple())}.
 
 get_file(Pid) ->        gen_server:call(Pid, get_file).
 src_line_count(Pid) ->  gen_server:call(Pid, src_line_count).
@@ -68,19 +69,20 @@ white_count(Pid) ->     gen_server:call(Pid, white_count).
 directive_count(Pid) -> gen_server:call(Pid, directive_count).
 
 summary(Pid) ->
-    PctAttrs = compute_code_ratios(Pid),
+    {code_ratios, PctAttrs} = code_ratios(Pid),
     {summary,
      PctAttrs ++
          [gen_server:call(Pid, Msg)
           || Msg <- [behav_type, mod_type, get_file, src_line_count]]}.
 
-compute_code_ratios(Pid) ->
+code_ratios(Pid) ->
     Counts = [element(2, gen_server:call(Pid, Msg))
               || Msg <- [comm_count, white_count, directive_count]],
     {src_line_count, SLC} = gen_server:call(Pid, src_line_count),
     Pcts = [round(C / SLC * 100) || C <- Counts],
     Code = 100 - lists:sum(Pcts),
-    lists:zip([code_pct, comm_pct, white_pct, directive_pct], [Code | Pcts]).
+    {code_ratios,
+     lists:zip([code_pct, comm_pct, white_pct, directive_pct], [Code | Pcts])}.
 
 
 %%%===================================================================
