@@ -45,7 +45,7 @@ file_type(Entry) ->
 show_file_list() ->
   {files_loaded, FL} = etdd_dig_server:files_loaded(),
   FileList = make_file_list(FL),
-  {ehtml, {span, [{id,container},{class,'super-list'}], FileList}}.
+  {ehtml, {span, [{id,container},{class,'variable-sizes clearfix super-list'}], FileList}}.
 
 make_file_list(FilesLoaded) ->
   [
