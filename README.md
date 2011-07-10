@@ -5,7 +5,20 @@ ETDD is a visual browser of erlang code. It relies on YAWS to provide a web inte
 
 While more interaction was envisioned, the initial capability only allows a flexible table display of source files loaded, behaviour type, lines of code and relative percentages of whitespace, comments and directives (for example, '-define' or '-include').
 
-Future plans are to use gproc for each source code file process so that dynamic queries can be used to filter the set of files displayed and allow the user to organize the view more dynamically.
+
+The Grand Scheme:
+-----------------
+
+Future plans are to use gproc for each source code file process. This allows querying and filtering of gproc attributes to choose the subset of code to ddisplay on the webpage.
+
+The following features are anticipated:
+
+  * More Isotope dynamic animation
+  * Sorting by source code attributes (LOC, Percentages, Names, etc.)
+  * Elimination of table entries (processes) that are no longer needed
+  * Interaction with a source code summary to obtain more information:
+     * Menu of choices: analyze functions, records, messaging
+     * Spawns a process for each action to delve deeper into the code
 
 
 Components used:
