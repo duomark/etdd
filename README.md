@@ -19,6 +19,8 @@ The following features are anticipated:
   * Interaction with a source code summary to obtain more information:
      * Menu of choices: analyze functions, records, messaging
      * Spawns a process for each action to delve deeper into the code
+     * Draw a hierarchy of application and supervisor processes
+     * Draw a graph of message interactions among modules
 
 
 Components used:
