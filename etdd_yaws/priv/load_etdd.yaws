@@ -13,6 +13,15 @@
   <div id="page">
     <div class="desc">
 
+      <form method="post" action="/load_etdd.yaws">
+        <p>
+          <label for="source">Choose a local directory containing *.erl and/or *.app.src files to add to the analysis:</label>
+          <input name="source" type="text" placeholder="Enter full pathname to a directory" size=95 pattern=".*/" autofocus required />
+        </p>
+        <b style="float:left; margin-right:400px"><input type="submit" /></b>
+        <b style="flot:right"><input type="reset" /></b>
+      </form>
+
 <erl>
 out(A) ->
   case postvar(A, "source") of
