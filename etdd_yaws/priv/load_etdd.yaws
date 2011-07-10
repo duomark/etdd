@@ -42,12 +42,45 @@ file_type(Entry) ->
 show_file_list() ->
   {files_loaded, FL} = etdd_dig_server:files_loaded(),
   FileList = make_file_list(FL),
-  {ehtml, {ul, [], ["/r/n", FileList]}}.
+  {ehtml, {table, [{bgcolor, gray},{cellpadding,5}], FileList}}.
 
 make_file_list(FilesLoaded) ->
-  FileList = [
-    ["<li><a href=\"file_etdd.yaws?file=", F, "\">", F, "</a></li>\r\n"]
-    || {_Time, F} <- FilesLoaded].
+  [{tr, [], [{th,[],Title}
+   || Title <- ["File", "Module", "Behaviour", "SLOC", "% Code",
+                "% Directives", "% Comments", "% Whitespace"]]}]
+   ++
+  [
+    begin
+      {find_file, Pid} = etdd_dig_server:find_file(F),
+      case etdd_dlv_server:summary(Pid) of
+        {summary, erl, Summ} -> erl_summary(Summ);
+        {summary, app, Summ} -> app_summary(Summ)
+      end
+    end || {_Time, F} <- FilesLoaded
+  ].
+
+erl_summary(Summ) ->
+  Keys = [get_file, mod_type, behav_type, src_line_count, code_pct, directive_pct, comm_pct, white_pct],
+  [File, Mod, Behav, Slc, CodePct, DirPct, CommPct, WhitePct] = [proplists:get_value(K, Summ, "") || K <- Keys],
+  {tr, [], [
+    {td, [], ["<a href=\"file_etdd.yaws?file=", File, "\">", File, "</a>"]},
+    {td, [], atom_to_list(Mod)},
+    {td, [], atom_to_list(Behav)},
+    {td, [{width,30}], [integer_to_list(Slc)]},
+    {td, [{width,30}], [integer_to_list(CodePct)]},
+    {td, [{width,30}], [integer_to_list(DirPct)]},
+    {td, [{width,30}], [integer_to_list(CommPct)]},
+    {td, [{width,30}], [integer_to_list(WhitePct)]}
+  ]}.
+
+app_summary(Summ) ->
+  Keys = [get_file, src_line_count, start_module],
+  [File, Slc, StartMod] = [proplists:get_value(K, Summ, "") || K <- Keys],
+  {tr, [], [
+    {td, [], ["<a href=\"file_etdd.yaws?file=", File, "\">", File, "</a>"]},
+    {td, [{colspan,2}], atom_to_list(StartMod)},
+    {td, [{width,30}], [integer_to_list(Slc)]}
+  ]}.
 
 </erl>
 
