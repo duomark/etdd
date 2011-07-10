@@ -229,6 +229,14 @@ get_app_src_files(Dir, Files) ->
 
 
 %% Convert app.src code lines to an #etdd_src{} record.
+skim_terms(File, [{application, Mod, Props}] = Terms) ->
+    #etdd_app_src{
+            file = File,
+            module = Mod,
+            app_lines = Terms,
+            line_count = length(Props),
+            start_module = element(1, proplists:get_value(mod, Props))
+           };
 skim_terms(File, Terms) ->
     #etdd_app_src{
             file = File,

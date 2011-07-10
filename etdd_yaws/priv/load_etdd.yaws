@@ -80,12 +80,11 @@ erl_summary(Summ) ->
   ]}.
 
 app_summary(Summ) ->
-  Keys = [get_file, src_line_count, start_module],
-  [File, Slc, StartMod] = [proplists:get_value(K, Summ, "") || K <- Keys],
-  ModName = string:substr(File, string:rchr(File, $/) + 1),
+  Keys = [get_file, mod, src_line_count, start_module],
+  [File, _ModName, Slc, StartMod] = [proplists:get_value(K, Summ, "") || K <- Keys],
   {span, [{class,source}], [
-    {h2, [{class,name}],   ModName},
-    {h3, [{class,behav}],  atom_to_list(StartMod)},
+    {h2, [{class,name}],   atom_to_list(StartMod)},
+    {h3, [{class,behav}],  "app.src"},
     {p,  [{class,loc}],    [integer_to_list(Slc)]}
   ]}.
 

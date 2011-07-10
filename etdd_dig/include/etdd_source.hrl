@@ -31,6 +31,7 @@
 %% App source files have different fields of interest.
 -record(etdd_app_src, {
           file = ""           :: string(),
+          module              :: atom(),
           line_count = 0      :: non_neg_integer(),
           app_lines = []      :: list(any()),
           start_module        :: atom()
