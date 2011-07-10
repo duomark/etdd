@@ -54,9 +54,9 @@ start_link() ->
 -spec load_app_src_dir(string()) -> ok.
 -spec loaded_file(string(), pid()) -> ok.
 
-load_src_file(File) ->    gen_server:cast(?SERVER, {load_file, File}).
-load_src_dir(Dir) ->      gen_server:cast(?SERVER, {load_src_dir, Dir}).
-load_app_src_dir(Dir) ->  gen_server:cast(?SERVER, {load_app_src_dir, Dir}).
+load_src_file(File) ->    gen_server:cast(?SERVER, {load_src_file, File}).
+load_src_dir(Dir) ->      gen_server:cast(?SERVER, {load_src_dir, erl, Dir}).
+load_app_src_dir(Dir) ->  gen_server:cast(?SERVER, {load_src_dir, app, Dir}).
 loaded_file(File, Pid) -> gen_server:cast(?SERVER, {loaded_file, File, Pid}).
 
 
@@ -110,8 +110,7 @@ handle_call(_Request, _From, State) ->
 
 
 -type cast_rqst() :: {load_src_file, string()}
-                   | {load_src_dir, string()}
-                   | {load_app_src_dir, string()}
+                   | {load_src_dir, app | erl, string()}
                    | {loaded_file, string(), pid()}
                    | any().
 -spec handle_cast(cast_rqst(), #dig_state{}) -> {noreply, #dig_state{}}.
@@ -119,36 +118,26 @@ handle_call(_Request, _From, State) ->
 %% Spawn a delve worker process to analyze a source file.
 handle_cast({load_src_file, File},
             #dig_state{files_loaded=FilesLoaded} = State) ->
-%%    proc_lib:spawn_link(?MODULE, delve_src, [File]),
-    delve_src(File),
-    NewFiles = [ {now(), File} | FilesLoaded ],
-    {noreply, State#dig_state{files_loaded=NewFiles}};
+    case file:read_file_info(File) of
+        {error, _Any} -> {noreply, State};
+        {ok, _FileExists} ->
+            delve_src(File),
+            NewFiles = [ {now(), File} | FilesLoaded ],
+            {noreply, State#dig_state{files_loaded=NewFiles}}
+    end;
 
 %% Spawn a delve worker process to analyze each source file in a dir.
-handle_cast({load_src_dir, Dir},
+handle_cast({load_src_dir, SrcType, Dir},
             #dig_state{files_loaded=FilesLoaded} = State) ->
     NewFiles = case file:list_dir(Dir) of 
                    {error, _Any} -> FilesLoaded;
                    {ok, Files} ->
                        %% proc_lib:spawn_link(?MODULE, delve_src, [File]),
-                       Srcs = [begin Fname = Dir ++ F, delve_src(Fname), {now(), Fname} end
-                               || F <- Files, length(F) > 3, string:sub_string(F, length(F)-3) == ".erl"],
-                       [gen_server:cast(?SERVER, {load_src_dir, Dir ++ D ++ "/"})
-                        || D <- Files, D == "src"],
-                       lists:append(Srcs, FilesLoaded)
-               end,
-    {noreply, State#dig_state{files_loaded=NewFiles}};
-
-%% Spawn a delve worker process to analyze any .app.src files in a dir.
-handle_cast({load_app_src_dir, Dir},
-            #dig_state{files_loaded=FilesLoaded} = State) ->
-    NewFiles = case file:list_dir(Dir) of 
-                   {error, _Any} -> FilesLoaded;
-                   {ok, Files} ->
-                       %% proc_lib:spawn_link(?MODULE, delve_app_src, [File]),
-                       Srcs = [begin Fname = Dir ++ F, delve_app_src(Fname), {now(), Fname} end
-                               || F <- Files, length(F) > 7, string:sub_string(F, length(F)-7) == ".app.src"],
-                       [gen_server:cast(?SERVER, {load_app_src_dir, Dir ++ D ++ "/"})
+                       Srcs = case SrcType of
+                                  erl -> get_src_files(Dir, Files);
+                                  app -> get_app_src_files(Dir, Files)
+                              end,
+                       [gen_server:cast(?SERVER, {load_src_dir, SrcType, Dir ++ D ++ "/"})
                         || D <- Files, D == "src"],
                        lists:append(Srcs, FilesLoaded)
                end,
@@ -213,9 +202,22 @@ delve_app_src(File) ->
 %%% Internal functions
 %%%===================================================================
 
-%% Convert app.src code lines to an #etdd_src{} record.
+-spec get_src_files(string(), list(string())) -> list(string()).
+-spec get_app_src_files(string(), list(string())) -> list(string()).
 -spec skim_terms(string(), list(any())) -> #etdd_app_src{}.
+-spec skim_lines(string(), list(binary())) -> #etdd_src{}.
 
+%% Get either *.erl source files or *.app.src source files.    
+get_src_files(Dir, Files) ->
+    [begin Fname = Dir ++ F, delve_src(Fname), {now(), Fname} end
+     || F <- Files, length(F) > 3, string:sub_string(F, length(F)-3) == ".erl"].
+
+get_app_src_files(Dir, Files) ->
+    [begin Fname = Dir ++ F, delve_app_src(Fname), {now(), Fname} end
+     || F <- Files, length(F) > 7, string:sub_string(F, length(F)-7) == ".app.src"].
+
+
+%% Convert app.src code lines to an #etdd_src{} record.
 skim_terms(File, Terms) ->
     #etdd_app_src{
             file = File,
@@ -225,8 +227,6 @@ skim_terms(File, Terms) ->
 
 
 %% Convert source code lines to an #etdd_src{} record.
--spec skim_lines(string(), list(binary())) -> #etdd_src{}.
-
 skim_lines(File, Lines) ->
     skim_lines(File, Lines, Lines, 1, [], [], [], 0, {}, 0, {}).
 
@@ -257,7 +257,7 @@ skim_lines(File, [H|T], Lines, LineNr, White, Comments, Directives, Mod, ModType
     end.
 
 
-
+%% Classify source code lines to specific types.
 -spec line_type(binary()) -> whitespace | comment | directive | other
                                  | {module, atom()} | {behaviour, atom()}.
                               
@@ -282,3 +282,4 @@ line_type(<<"-behaviour", Rest/binary>>) ->
 %% All others are marked with an atom identifying type.
 line_type(<<"-", _Rest/binary>>) -> directive;
 line_type(_Other)                -> other.
+
