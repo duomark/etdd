@@ -7,14 +7,11 @@
 
   <link rel="stylesheet" href="/css/reset.css" media="screen, projection">
   <link rel="stylesheet" href="/css/theme.css" media="screen, projection">
-
-  <script src="/js/jquery-1.6.2.min.js"></script>
-  <script src="/js/jquery.isotope.min.js"></script>
+  <link rel="stylesheet" href="/css/isotope.css" media="screen, projection">
 </head>
 <body>
   <div id="page">
-    <div class="desc section">
-      <div class="main">
+    <div class="desc">
 
 <erl>
 out(A) ->
@@ -48,13 +45,9 @@ file_type(Entry) ->
 show_file_list() ->
   {files_loaded, FL} = etdd_dig_server:files_loaded(),
   FileList = make_file_list(FL),
-  {ehtml, {table, [{bgcolor, gray},{cellpadding,5}], FileList}}.
+  {ehtml, {span, [{id,container},{class,'super-list'}], FileList}}.
 
 make_file_list(FilesLoaded) ->
-  [{tr, [], [{th,[],Title}
-   || Title <- ["File", "Module", "Behaviour", "SLOC", "% Code",
-                "% Directives", "% Comments", "% Whitespace"]]}]
-   ++
   [
     begin
       {find_file, Pid} = etdd_dig_server:find_file(F),
@@ -67,35 +60,54 @@ make_file_list(FilesLoaded) ->
 
 erl_summary(Summ) ->
   Keys = [get_file, mod_type, behav_type, src_line_count, code_pct, directive_pct, comm_pct, white_pct],
-  [File, Mod, Behav, Slc, CodePct, DirPct, CommPct, WhitePct] = [proplists:get_value(K, Summ, "") || K <- Keys],
-  {tr, [], [
-    {td, [], ["<a href=\"file_etdd.yaws?file=", File, "\">", File, "</a>"]},
-    {td, [], atom_to_list(Mod)},
-    {td, [], atom_to_list(Behav)},
-    {td, [{width,30}], [integer_to_list(Slc)]},
-    {td, [{width,30}], [integer_to_list(CodePct)]},
-    {td, [{width,30}], [integer_to_list(DirPct)]},
-    {td, [{width,30}], [integer_to_list(CommPct)]},
-    {td, [{width,30}], [integer_to_list(WhitePct)]}
+  [_File, Mod, Behav, Slc, _CodePct, DirPct, CommPct, WhitePct] = [proplists:get_value(K, Summ, "") || K <- Keys],
+  {span, [{class,source}], [
+    {h2, [{class,name}],   atom_to_list(Mod)},
+    {h3, [{class,behav}],  abbrev(Behav)},
+    {p,  [{class,loc}],    [integer_to_list(Slc) ++ " LOC"]},
+    {p,  [{class,direct}], [integer_to_list(DirPct) ++ "% D"]},
+    {p,  [{class,comm}],   [integer_to_list(CommPct) ++ "% C"]},
+    {p,  [{class,white}],  [integer_to_list(WhitePct) ++ "% W"]}
   ]}.
 
 app_summary(Summ) ->
   Keys = [get_file, src_line_count, start_module],
   [File, Slc, StartMod] = [proplists:get_value(K, Summ, "") || K <- Keys],
+  ModName = string:substr(File, string:rchr(File, $/) + 1),
   {tr, [], [
-    {td, [], ["<a href=\"file_etdd.yaws?file=", File, "\">", File, "</a>"]},
-    {td, [{colspan,2}], atom_to_list(StartMod)},
-    {td, [{width,30}], [integer_to_list(Slc)]}
+    {h2, [{class, name}],  ModName},
+    {h3, [{class, behav}], atom_to_list(StartMod)},
+    {p,  [{class,loc}],    [integer_to_list(Slc)]}
   ]}.
 
-</erl>
+abbrev(application)       -> "App";
+abbrev(supervisor)        -> "Sup";
+abbrev(supervisor_bridge) -> "SupBr";
+abbrev(gen_server)        -> "GSrv";
+abbrev(gen_fsm)           -> "GFsm";
+abbrev(gen_event)         -> "GEvnt";
+abbrev(Other)             -> atom_to_list(Other).
 
-      </div> <!-- /end .main -->
+</erl>
 
       <div class="sidebar">
       </div> <!-- /end .sidebar -->
 
-    </div> <!-- /end .desc.section -->
+    </div> <!-- /end .desc -->
   </div> <!-- /end #page -->
+
+  <script src="/js/jquery-1.6.2.min.js"></script>
+  <script src="/js/jquery.isotope.min.js"></script>
+  <script>
+    $(function(){
+      var $container = $('#container');
+      $container.isotope({
+        itemSelector: '.source'
+        masonry : {columnWidth : 220}
+      });
+    });
+
+  </script>
+
 </body>
 </html>

@@ -1,5 +1,6 @@
 #page {
   width: 90%;
+  height: 100%;
   margin: 36px auto;
 }
 
@@ -10,19 +11,19 @@ body {
 }
 
 h1 {
-  font-size: 1.5em;     /* 24px/16px */
+  font-size: 1.25em;     /* 20px/16px */
   font-style: italic;
   font-weight: normal;
 }
 
 h2 {
-  font-size: 1.25em;    /* 20px/16px */
+  font-size: 1.00em;    /* 16px/16px */
   font-style: italic;
   font-weight: normal;
 }
 
 h3 {
-  font-size: 1.125em;   /* 18px/16px */
+  font-size: 0.875em;   /* 14px/16px */
   font-style: italic;
   font-weight: normal;
 }
@@ -42,3 +43,142 @@ h3 {
   width: 36.7777778%   /* 331/px/960px */
 }
 
+
+
+
+/* Isotope example styling */
+
+#container {
+  border: 1px solid #666;
+  padding: 5px;
+  margin-bottom: 20px;
+}
+
+.source {
+  width: 210px;
+  height: 90px;
+  margin: 5px;
+  float: left;
+  overflow: hidden;
+  position: relative;
+  background: #888;
+  color: #222;
+  -webkit-border-top-right-radius: 1.2em;
+      -moz-border-radius-topright: 1.2em;
+          border-top-right-radius: 1.2em;
+}
+
+.source * {position:absolute; margin:0;}
+.source .symbol {left: 0.2em; top: 0.4em; font-size: 2.0em; line-height: 0.825em; color: #FFF;}
+.source.large .symbol {font-size:2.5em;}
+.source.fake  .symbol {color:#FFF;}
+.source .name {left: 0.5em; bottom: 0.2em; font-size: 1.05em}
+.source .behav {font-size: 1.9em; left: 0.5em; top: 0.4em; color:#FFF;}
+.source .loc {font-size: 1.25em; font-weight: bold; color: hsla(0,0%,0%,.5); right: 0.5em; top: 0.5em;}
+.source .comm {font-size: .75em; font-weight: normal; color: hsla(0,0%,0%,.5); right: 0.5em; top: 2.55em;}
+.source .direct {font-size: .75em; font-weight: normal; color: hsla(0,0%,0%,.5); right: 0.5em; top: 3.50em;}
+.source .white {font-size: .75em; font-weight: normal; color: hsla(0,0%,0%,.5); right: 0.45em; top: 4.55em;}
+
+.variable-sizes .source.width2 { width: 230px; }
+.variable-sizes .source.height2 { height: 230px; }
+.variable-sizes .source.width2.height2 {font-size: 2.0em;}
+.source.large,
+.variable-sizes .source.large,
+.variable-sizes .source.large.width2.height2 {
+  font-size: 3.0em;
+  width: 350px;
+  height: 350px;
+  z-index: 100;
+}
+
+.clickable .source:hover {cursor: pointer;}
+.clickable .source:hover h3 {text-shadow: 0 0 10px white, 0 0 10px white;}
+.clickable .source:hover h2 {color: white;}
+
+
+
+.element {
+  width: 210px;
+  height: 110px;
+  margin: 5px;
+  float: left;
+  overflow: hidden;
+  position: relative;
+  background: #888;
+  color: #222;
+  -webkit-border-top-right-radius: 1.2em;
+      -moz-border-radius-topright: 1.2em;
+          border-top-right-radius: 1.2em;
+}
+
+.element * {
+  position: absolute;
+  margin: 0;
+}
+
+.element .symbol {
+  left: 0.2em;
+  top: 0.4em;
+  font-size: 3.8em;
+  line-height: 1.0em;
+  color: #FFF;
+}
+.element.large .symbol {
+  font-size: 4.5em;
+}
+
+.element.fake .symbol {
+  color: #000;
+}
+
+.element .name {
+  left: 0.5em;
+  bottom: 1.6em;
+  font-size: 1.05em;
+}
+
+.element .weight {
+  font-size: 0.9em;
+  left: 0.5em;
+  bottom: 0.5em;
+}
+
+.Element .number {
+  font-size: 1.25em;
+  font-weight: bold;
+  color: hsla(0,0%,0%,.5);
+  right: 0.5em;
+  top: 0.5em;
+}
+
+.variable-sizes .element.width2 { width: 230px; }
+
+.variable-sizes .element.height2 { height: 230px; }
+
+.variable-sizes .element.width2.height2 {
+  font-size: 2.0em;
+}
+
+.element.large,
+.variable-sizes .element.large,
+.variable-sizes .element.large.width2.height2 {
+  font-size: 3.0em;
+  width: 350px;
+  height: 350px;
+  z-index: 100;
+}
+
+.clickable .element:hover {
+  cursor: pointer;
+}
+
+.clickable .element:hover h3 {
+  text-shadow:
+    0 0 10px white,
+    0 0 10px white
+  ;
+}
+
+.clickable .element:hover h2 {
+  color: white;
+}
