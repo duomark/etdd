@@ -83,9 +83,9 @@ app_summary(Summ) ->
   Keys = [get_file, src_line_count, start_module],
   [File, Slc, StartMod] = [proplists:get_value(K, Summ, "") || K <- Keys],
   ModName = string:substr(File, string:rchr(File, $/) + 1),
-  {tr, [], [
-    {h2, [{class, name}],  ModName},
-    {h3, [{class, behav}], atom_to_list(StartMod)},
+  {span, [{class,source}], [
+    {h2, [{class,name}],   ModName},
+    {h3, [{class,behav}],  atom_to_list(StartMod)},
     {p,  [{class,loc}],    [integer_to_list(Slc)]}
   ]}.
 

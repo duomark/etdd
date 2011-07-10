@@ -116,14 +116,11 @@ handle_call(_Request, _From, State) ->
 -spec handle_cast(cast_rqst(), #dig_state{}) -> {noreply, #dig_state{}}.
 
 %% Spawn a delve worker process to analyze a source file.
-handle_cast({load_src_file, File},
-            #dig_state{files_loaded=FilesLoaded} = State) ->
-    case file:read_file_info(File) of
-        {error, _Any} -> {noreply, State};
-        {ok, _FileExists} ->
-            delve_src(File),
-            NewFiles = [ {now(), File} | FilesLoaded ],
-            {noreply, State#dig_state{files_loaded=NewFiles}}
+handle_cast({load_src_file, File}, State) ->
+    case file_type(File) of
+        erl_file -> cast_file_load(erl_file, File, State);
+        app_file -> cast_file_load(app_file, File, State);
+        _Other -> {noreply, State}
     end;
 
 %% Spawn a delve worker process to analyze each source file in a dir.
@@ -132,7 +129,6 @@ handle_cast({load_src_dir, SrcType, Dir},
     NewFiles = case file:list_dir(Dir) of 
                    {error, _Any} -> FilesLoaded;
                    {ok, Files} ->
-                       %% proc_lib:spawn_link(?MODULE, delve_src, [File]),
                        Srcs = case SrcType of
                                   erl -> get_src_files(Dir, Files);
                                   app -> get_app_src_files(Dir, Files)
@@ -152,6 +148,21 @@ handle_cast({loaded_file, File, Pid},
 %% Ignore other cast requests.
 handle_cast(_Msg, State) ->
     {noreply, State}.
+
+
+%% Load either a .erl file or a .app.src file
+cast_file_load(Type, File, #dig_state{files_loaded=FilesLoaded} = State) ->
+    case file:read_file_info(File) of
+        {error, _Any} -> {noreply, State};
+        {ok, _FileExists} ->
+            case Type of
+                erl_file -> delve_src(File);
+                app_file -> delve_app_src(File)
+            end,
+            NewFiles = [ {now(), File} | FilesLoaded ],
+            {noreply, State#dig_state{files_loaded=NewFiles}}
+    end.
+
 
 
 -spec handle_info(any(), #dig_state{}) -> {noreply, #dig_state{}}.
@@ -282,4 +293,20 @@ line_type(<<"-behaviour", Rest/binary>>) ->
 %% All others are marked with an atom identifying type.
 line_type(<<"-", _Rest/binary>>) -> directive;
 line_type(_Other)                -> other.
+
+
+%% ------ Last minute refactoring not in correct place --------------
+
+%% Differentiate file types on .erl vs .app.src
+file_type(Entry) ->
+  Len = length(Entry),
+  Last = Entry == "" orelse lists:last(Entry),
+  Tail3 = Len > 3 andalso string:sub_string(Entry, Len-3),
+  Tail7 = Len > 7 andalso string:sub_string(Entry, Len-7),
+  if
+    Tail7 == ".app.src" -> app_file;
+    Tail3 == ".erl" -> erl_file;
+    Last =:= $/ -> dir;
+    true -> invalid
+  end.
 
