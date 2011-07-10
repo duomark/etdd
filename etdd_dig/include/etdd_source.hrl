@@ -15,7 +15,7 @@
 -record(etdd_src, {
           file = ""           :: string(),
           line_count = 0      :: non_neg_integer(),
-          lines = {}          :: etdd_src_lines(),
+          src_lines = {}      :: etdd_src_lines(),
           whitespace = {}     :: etdd_src_refs(),
           comments = {}       :: etdd_src_refs(),
           directives = {}     :: etdd_src_refs(),
@@ -23,4 +23,15 @@
           module_type = {}    :: atom() | {},
           behaviour = 0       :: non_neg_integer(),
           behaviour_type = {} :: atom() | {}
+         }).
+
+%% App source code is just the list of terms.
+-type etdd_app_lines() :: list(any()).
+
+%% App source files have different fields of interest.
+-record(etdd_app_src, {
+          file = ""           :: string(),
+          line_count = 0      :: non_neg_integer(),
+          app_lines = []      :: list(any()),
+          start_module        :: atom()
          }).

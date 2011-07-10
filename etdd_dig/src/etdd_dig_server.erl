@@ -13,15 +13,16 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, load_dir/1, load_file/1,
-         loaded_file/2, find_file/1, files_loaded/0]).
+-export([start_link/0,
+         load_app_src_dir/1, load_src_dir/1,
+         load_src_file/1, loaded_file/2, find_file/1, files_loaded/0]).
 
 %% gen_server callbacks
 -export([init/1, terminate/2, code_change/3,
          handle_call/3, handle_cast/2, handle_info/2]).
 
 %% spawned functions
--export([delve/1]).
+-export([delve_src/1, delve_app_src/1]).
 
 -include("etdd_source.hrl").
 
@@ -48,11 +49,14 @@ start_link() ->
 
 
 %% Asynchronous requests...
--spec load_file(string()) -> ok.
+-spec load_src_file(string()) -> ok.
+-spec load_src_dir(string()) -> ok.
+-spec load_app_src_dir(string()) -> ok.
 -spec loaded_file(string(), pid()) -> ok.
 
-load_dir(Dir) ->          gen_server:cast(?SERVER, {load_dir, Dir}).
-load_file(File) ->        gen_server:cast(?SERVER, {load_file, File}).
+load_src_file(File) ->    gen_server:cast(?SERVER, {load_file, File}).
+load_src_dir(Dir) ->      gen_server:cast(?SERVER, {load_src_dir, Dir}).
+load_app_src_dir(Dir) ->  gen_server:cast(?SERVER, {load_app_src_dir, Dir}).
 loaded_file(File, Pid) -> gen_server:cast(?SERVER, {loaded_file, File, Pid}).
 
 
@@ -105,33 +109,49 @@ handle_call(_Request, _From, State) ->
     {reply, ok, State}.
 
 
--type cast_rqst() :: {load_dir, string()}
-                   | {load_file, string()}
+-type cast_rqst() :: {load_src_file, string()}
+                   | {load_src_dir, string()}
+                   | {load_app_src_dir, string()}
                    | {loaded_file, string(), pid()}
                    | any().
 -spec handle_cast(cast_rqst(), #dig_state{}) -> {noreply, #dig_state{}}.
 
+%% Spawn a delve worker process to analyze a source file.
+handle_cast({load_src_file, File},
+            #dig_state{files_loaded=FilesLoaded} = State) ->
+%%    proc_lib:spawn_link(?MODULE, delve_src, [File]),
+    delve_src(File),
+    NewFiles = [ {now(), File} | FilesLoaded ],
+    {noreply, State#dig_state{files_loaded=NewFiles}};
+
 %% Spawn a delve worker process to analyze each source file in a dir.
-handle_cast({load_dir, Dir},
+handle_cast({load_src_dir, Dir},
             #dig_state{files_loaded=FilesLoaded} = State) ->
     NewFiles = case file:list_dir(Dir) of 
                    {error, _Any} -> FilesLoaded;
                    {ok, Files} ->
-                       %% proc_lib:spawn_link(?MODULE, delve, [File]),
-                       Srcs = [begin Fname = Dir ++ F, delve(Fname), {now(), Fname} end
+                       %% proc_lib:spawn_link(?MODULE, delve_src, [File]),
+                       Srcs = [begin Fname = Dir ++ F, delve_src(Fname), {now(), Fname} end
                                || F <- Files, length(F) > 3, string:sub_string(F, length(F)-3) == ".erl"],
-                       [gen_server:cast(?SERVER, {load_dir, Dir ++ D ++ "/"})
+                       [gen_server:cast(?SERVER, {load_src_dir, Dir ++ D ++ "/"})
                         || D <- Files, D == "src"],
                        lists:append(Srcs, FilesLoaded)
                end,
     {noreply, State#dig_state{files_loaded=NewFiles}};
 
-%% Spawn a delve worker process to analyze a source file.
-handle_cast({load_file, File},
+%% Spawn a delve worker process to analyze any .app.src files in a dir.
+handle_cast({load_app_src_dir, Dir},
             #dig_state{files_loaded=FilesLoaded} = State) ->
-%%    proc_lib:spawn_link(?MODULE, delve, [File]),
-    delve(File),
-    NewFiles = [ {now(), File} | FilesLoaded ],
+    NewFiles = case file:list_dir(Dir) of 
+                   {error, _Any} -> FilesLoaded;
+                   {ok, Files} ->
+                       %% proc_lib:spawn_link(?MODULE, delve_app_src, [File]),
+                       Srcs = [begin Fname = Dir ++ F, delve_app_src(Fname), {now(), Fname} end
+                               || F <- Files, length(F) > 7, string:sub_string(F, length(F)-7) == ".app.src"],
+                       [gen_server:cast(?SERVER, {load_app_src_dir, Dir ++ D ++ "/"})
+                        || D <- Files, D == "src"],
+                       lists:append(Srcs, FilesLoaded)
+               end,
     {noreply, State#dig_state{files_loaded=NewFiles}};
 
 %% Insert a newly spawned delve worker {File, Pid} pair into an ets table.
@@ -155,12 +175,13 @@ handle_info(_Info, State) -> {noreply, State}.
 %%%===================================================================
 
 %% Load and transfer data to a delve worker.
--spec delve(string()) -> ok.
+-spec delve_src(string()) -> ok.
+-spec delve_app_src(string()) -> ok.
 
-delve(File) ->
+delve_src(File) ->
     case file:read_file(File) of
         {error, Reason} ->
-            error_logger:error_msg("~p:delve/1 cannot read ~s: ~p~n",
+            error_logger:error_msg("~p:delve_src/1 cannot read ~s: ~p~n",
                                    [?MODULE, File, Reason]);
         {ok, RawSource} ->
             NL = list_to_binary(io_lib:nl()),
@@ -168,8 +189,22 @@ delve(File) ->
             case ?DELVE_SUPERVISOR:analyze_source(skim_lines(File, Lines)) of
                 {ok, Pid} -> loaded_file(File, Pid);
                 {error, Problem} ->
-                    error_logger:error_msg("~p:analyze_source error: ~p~n",
-                                           [?MODULE, Problem])
+                    error_logger:error_msg("~p:analyze_source of ~p error: ~p~n",
+                                           [?MODULE, File, Problem])
+            end
+    end.
+
+delve_app_src(File) ->
+    case file:consult(File) of
+        {error, Reason} ->
+            error_logger:error_msg("~p:delve_app_src/1 cannot read ~s: ~p~n",
+                                   [?MODULE, File, Reason]);
+        {ok, Terms} ->
+            case ?DELVE_SUPERVISOR:analyze_source(skim_terms(File, Terms)) of
+                {ok, Pid} -> loaded_file(File, Pid);
+                {error, Problem} ->
+                    error_logger:error_msg("~p:analyze_source of ~p error: ~p~n",
+                                           [?MODULE, File, Problem])
             end
     end.
 
@@ -178,6 +213,18 @@ delve(File) ->
 %%% Internal functions
 %%%===================================================================
 
+%% Convert app.src code lines to an #etdd_src{} record.
+-spec skim_terms(string(), list(any())) -> #etdd_app_src{}.
+
+skim_terms(File, Terms) ->
+    #etdd_app_src{
+            file = File,
+            app_lines = Terms,
+            line_count = length(Terms)
+           }.
+
+
+%% Convert source code lines to an #etdd_src{} record.
 -spec skim_lines(string(), list(binary())) -> #etdd_src{}.
 
 skim_lines(File, Lines) ->
@@ -188,15 +235,16 @@ skim_lines(File, [], Lines, _LineNr, White, Comments, Directives,
     TupleLines = list_to_tuple(Lines),
     #etdd_src{
                file = File,
-               line_count = tuple_size(TupleLines),
-               lines = TupleLines,
-               whitespace = list_to_tuple(lists:reverse(White)),
-               comments = list_to_tuple(lists:reverse(Comments)),
-               directives = list_to_tuple(lists:reverse(Directives)),
                module = Module,
                module_type = ModType,
                behaviour = Behaviour,
-               behaviour_type = BehavType
+               behaviour_type = BehavType,
+
+               src_lines = TupleLines,
+               line_count = tuple_size(TupleLines),
+               whitespace = list_to_tuple(lists:reverse(White)),
+               comments = list_to_tuple(lists:reverse(Comments)),
+               directives = list_to_tuple(lists:reverse(Directives))
              };
 skim_lines(File, [H|T], Lines, LineNr, White, Comments, Directives, Mod, ModType, Beh, BehType) ->
     case line_type(H) of
@@ -209,6 +257,10 @@ skim_lines(File, [H|T], Lines, LineNr, White, Comments, Directives, Mod, ModType
     end.
 
 
+
+-spec line_type(binary()) -> whitespace | comment | directive | other
+                                 | {module, atom()} | {behaviour, atom()}.
+                              
 %% If all whitespace was thrown away and nothing left, it was a whitespace line...
 line_type(<<>>)                  -> whitespace;
 line_type(<<" ", Rest/binary>>)  -> line_type(Rest);

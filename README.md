@@ -45,7 +45,7 @@ cd to the top level directory and perform the following commands:
 
   rel/dig_and_delve/bin/dig_and_delve console
 
-  1> [etdd_dig_server:load_dir("../../" ++ D) || D <- ["dig_and_delve/src/","etdd_dig/src/","etdd_dlv/src/"]].
+  1> [etdd_dig_server:load_src_dir("../../" ++ D) || D <- ["dig_and_delve/src/","etdd_dig/src/","etdd_dlv/src/"]].
 
   > ok
 
@@ -90,3 +90,5 @@ cd to the top level directory and perform the following commands:
            {get_file,"../../etdd_dlv/src/etdd_dlv_server.erl"},
            {src_line_count,157}]},
      ...]
+
+The same request sequence can be repeated, but at the first step use load_app_src_dir instead of load_src_dir, giving an analysis of .app.src files.
