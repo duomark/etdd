@@ -18,14 +18,12 @@ start_link() ->
 
 run() ->
     Id = "yaws_embedded",
-    %% Docroot = "lib/etdd_yaws-0.0.1/priv/",
     Docroot = get_app_env(docroot, "/var/yaws/www"),
     GconfList = [{id, Id}],
     SconfList =
         [
          %% HTTP listener...
          {port, 8888},
-         {servername, "yon"},
          {listen, {0,0,0,0}},
          {docroot, Docroot}
         ],

@@ -1,7 +1,27 @@
-<html>
+<!DOCTYPE html>
 <head>
-  <title>ETDD</title>
+  <title>Eleven, Twelve -- Dig and Delve (ETDD)</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="css/reset.css" media="screen, projection">
+  <link rel="stylesheet" href="css/theme.css" media="screen, projection">
 </head>
 <body>
+  <div id="page">
+    <div class="desc section">
+      <h1>Choose Erlang Code to Browse</h1>
+
+      <div class="main">
+        <form method="post" action="/etdd.yaws">
+          <p>Choose a local directory containing *.erl files or src/*.erl files:</p>
+          <input name="dir" type="text" size="88" />
+          <p><input type="submit" /> <input type="reset" /></p>
+        </form>
+      </div> <!-- /end .main -->
+
+      <div class="sidebar">
+      </div> <!-- /end .sidebar -->
+
+    </div> <!-- /end .desc.section -->
+  </div> <!-- /end #page -->
 </body>
 </html>

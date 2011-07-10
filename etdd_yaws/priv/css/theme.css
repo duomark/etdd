@@ -1,0 +1,44 @@
+#page {
+  width: 90%;
+  margin: 36px auto;
+}
+
+body {
+  background-color: #E1C6BA;
+  color: 4B484E;
+  font: normal 100% sans-serif;
+}
+
+h1 {
+  font-size: 1.5em;     /* 24px/16px */
+  font-style: italic;
+  font-weight: normal;
+}
+
+h2 {
+  font-size: 1.25em;    /* 20px/16px */
+  font-style: italic;
+  font-weight: normal;
+}
+
+h3 {
+  font-size: 1.125em;   /* 18px/16px */
+  font-style: italic;
+  font-weight: normal;
+}
+
+.desc {
+  margin: 0 auto 53px;
+  width: 93.75%;        /* 900px/960px */
+}
+
+.desc .main {
+  float: left;
+  width: 62.8888889%   /* 566/px/960px */
+}
+
+.desc .sidebar {
+  float: right;
+  width: 36.7777778%   /* 331/px/960px */
+}
+
