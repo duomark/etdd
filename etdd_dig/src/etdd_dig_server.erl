@@ -119,7 +119,9 @@ handle_cast({load_dir, Dir},
                    {ok, Files} ->
                        %% proc_lib:spawn_link(?MODULE, delve, [File]),
                        Srcs = [begin Fname = Dir ++ F, delve(Fname), {now(), Fname} end
-                               || F <- Files, string:sub_string(F, length(F)-3) == ".erl"],
+                               || F <- Files, length(F) > 3, string:sub_string(F, length(F)-3) == ".erl"],
+                       [gen_server:cast(?SERVER, {load_dir, Dir ++ D ++ "/"})
+                        || D <- Files, D == "src"],
                        lists:append(Srcs, FilesLoaded)
                end,
     {noreply, State#dig_state{files_loaded=NewFiles}};
