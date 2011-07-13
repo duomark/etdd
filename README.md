@@ -9,11 +9,11 @@ While more interaction was envisioned, the initial capability only allows a flex
 The Grand Scheme:
 -----------------
 
-Future plans are to use gproc for each source code file process. This allows querying and filtering of gproc attributes to choose the subset of code to ddisplay on the webpage.
+Future plans are to use gproc for each source code file process. This allows querying and filtering of gproc attributes to choose the subset of code to display on the webpage.
 
 The following features are anticipated:
 
-  * More Isotope dynamic animation
+  * Converting from Isotype to d3 (http://mbostock.github.com/d3/) for data driven documents
   * Sorting by source code attributes (LOC, Percentages, Names, etc.)
   * Elimination of table entries (processes) that are no longer needed
   * Interaction with a source code summary to obtain more information:
@@ -27,9 +27,11 @@ Components used:
 ----------------
 
   * rebar (github.com/basho/rebar)
+  * evfs (github.com/yrashk/evfs)
   * yaws-1.90 (github.com/klacke/yaws)
   * jquery-1.6.2.js
   * jquery.isotope
+  * d3.js
 
 
 Software Organization:
