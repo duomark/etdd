@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8">
+  <!--[if lt IE 9]><script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+
+  <title>ETDD Loaded Source Files</title>
+
+  <link rel="stylesheet" href="/css/reset.css" media="screen, projection">
+  <link rel="stylesheet" href="/css/theme.css" media="screen, projection">
+  <link rel="stylesheet" href="/css/d3.css" media="screen, projection">
+</head>
+<body>
+  <div id="page">
+      <!-- form method="post" action="/graph_etdd.yaws">
+        <p>
+          <label for="source">Choose a local directory containing *.erl and/or *.app.src files to add to the analysis:</label>
+          <input name="source" type="text" placeholder="Enter full pathname to a directory" size=95 pattern=".*/" autofocus required />
+        </p>
+        <b style="float:left; margin-right:400px"><input type="submit" /></b>
+        <b style="float:right"><input type="reset" /></b>
+      </form -->
+
+    <div class="desc">
+
+
+      <div id="chart">
+        <button class="first last" onclick="animate()">Show chart</button>
+      </div>
+
+  <script src="/js/d3.min.js"></script>
+  <script src="/js/d3.chart.min.js"></script>
+
+  <script>
+
+<erl>
+out(A) ->
+  case postvar(A, "source") of
+    undefined -> {ehtml, {p, [], ["You must enter a file or directory name"]}};
+    {ok, Req} ->
+      case file_type(Req) of
+        dir  ->  etdd_dig_server:load_src_dir(Req),  show_file_list();
+        file ->  etdd_dig_server:load_src_file(Req), show_file_list();
+        invalid -> 
+          {ehtml,
+            {p,[], ["You selected directory ", Req,
+                    " which is neither a valid file nor a directory.",
+                    " (Note: files must end in '.erl' or '.app.src' ",
+                    " whilst directories must end with '/')"]}}
+      end
+  end.
+
+file_type(Entry) ->
+  Len = length(Entry),
+  Last = Entry == "" orelse lists:last(Entry),
+  Tail3 = Len > 3 andalso string:sub_string(Entry, Len-3),
+  Tail7 = Len > 7 andalso string:sub_string(Entry, Len-7),
+  if
+    Tail7 == ".app.src" -> file;
+    Tail3 == ".erl" -> file;
+    Last =:= $/ -> dir;
+    true -> invalid
+  end.
+
+show_file_list() ->
+  {files_loaded, FL} = etdd_dig_server:files_loaded(),
+  FileList = make_file_list(FL),
+  case FileList of
+    [] -> {html, ["raw_data = [];"]};
+    [H|T] -> {html, ["raw_data = [\r\n", string:substr(H,2), T, "];"]}
+  end.
+
+make_file_list(FilesLoaded) ->
+  [
+    begin
+      {find_file, Pid} = etdd_dig_server:find_file(F),
+      case etdd_dlv_server:summary(Pid) of
+        {summary, erl, Summ} -> erl_summary(Summ);
+        {summary, app, Summ} -> app_summary(Summ)
+      end
+    end || {_Time, F} <- FilesLoaded
+  ].
+
+erl_summary(Summ) ->
+  Keys = [get_file, mod_type, behav_type, src_line_count, code_pct, directive_pct, comm_pct, white_pct],
+  [_File, Mod, Behav, _Slc, CodePct, DirPct, CommPct, WhitePct] = [proplists:get_value(K, Summ, "") || K <- Keys],
+  lists:flatten(io_lib:format(",{title:~p,subtitle:~p,markers:[~p,~p],measures:[~p,~p],ranges:[~p,~p,~p]}\r\n",
+                              [atom_to_list(Mod), abbrev(Behav), 50, 75, DirPct, DirPct+CodePct, WhitePct, WhitePct+CommPct, 100])).
+
+app_summary(Summ) ->
+  Keys = [get_file, mod, src_line_count, start_module],
+  [File, _ModName, Slc, StartMod] = [proplists:get_value(K, Summ, "") || K <- Keys],
+  lists:flatten(io_lib:format(",{title:\"~p\",subtitle:\"~p\",markers:[~p],ranges:[~p,~p,~p],}\r\n",
+                              atom_to_list(StartMod), "app.src", Slc, 33, 66, 100)).
+
+abbrev(application)       -> "App";
+abbrev(supervisor)        -> "Sup";
+abbrev(supervisor_bridge) -> "SupBr";
+abbrev(gen_server)        -> "GSrv";
+abbrev(gen_fsm)           -> "GFsm";
+abbrev(gen_event)         -> "GEvnt";
+abbrev(Other)             -> atom_to_list(Other).
+
+</erl>
+
+var w = 960,
+   h = 50,
+   m = [5, 40, 20, 120]; // top right bottom left
+
+var chart = d3.chart.bullet()
+    .width(w - m[1] - m[3])
+    .height(h - m[0] - m[2]);
+
+alert(raw_data[0].ranges[0] + " " + raw_data[0].ranges[1] + " " + raw_data[0].ranges[2]);
+
+var vis = d3.select("#chart").selectAll("svg")
+       .data(raw_data)
+     .enter().append("svg:svg")
+      .attr("class", "bullet")
+      .attr("width", w)
+      .attr("height", h)
+    .append("svg:g")
+      .attr("transform", "translate(" + m[3] + "," + m[0] + ")")      
+      .call(chart);
+
+  var title = vis.append("svg:g")
+      .attr("text-anchor", "end")
+      .attr("transform", "translate(-6," + (h - m[0] - m[2]) / 2 + ")");
+
+  title.append("svg:text")
+      .attr("class", "title")
+      .text(function(d) { return d.title; });
+
+  title.append("svg:text")
+      .attr("class", "subtitle")
+      .attr("dy", "1em")
+      .text(function(d) { return d.subtitle; });
+
+  chart.duration(1000);
+
+  window.animate = function() {
+    vis.call(chart);
+  };
+
+  </script>
+
+
+      <div class="sidebar">
+      </div> <!-- /end .sidebar -->
+
+    </div> <!-- /end .desc -->
+  </div> <!-- /end #page -->
+
+</body>
+</html>
