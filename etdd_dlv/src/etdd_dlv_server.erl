@@ -113,6 +113,13 @@ terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 
+-spec handle_cast(any(), #dlv_state{}) -> {noreply, #dlv_state{}}.
+-spec handle_info(any(), #dlv_state{}) -> {noreply, #dlv_state{}}.
+
+handle_cast(_Msg, State) ->  {noreply, State}.
+handle_info(_Info, State) -> {noreply, State}.
+
+
 %%%===================================================================
 %%% handle message callbacks
 %%%===================================================================
@@ -170,13 +177,6 @@ handle_call(code_type, _From, #dlv_state{src_code=#etdd_app_src{}} = State) -> {
     
 %% Ignore all other requests silently.
 handle_call(_Request, _From, State) -> {reply, ignored, State}.
-
-
--spec handle_cast(any(), #dlv_state{}) -> {noreply, #dlv_state{}}.
--spec handle_info(any(), #dlv_state{}) -> {noreply, #dlv_state{}}.
-
-handle_cast(_Msg, State) ->  {noreply, State}.
-handle_info(_Info, State) -> {noreply, State}.
 
 
 %%%===================================================================
