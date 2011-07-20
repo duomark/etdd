@@ -30,11 +30,6 @@
           src_code :: #etdd_src{} | #etdd_app_src{}
          }).
 
-%% Macro hacks to clean up repetitive code
--define(HC_APP(RQST, FLD, VAL),     handle_call(RQST, _From, #dlv_state{src_code=#etdd_app_src{FLD=VAL}} = State)).
--define(HC_ERL(RQST, FLD, VAL),     handle_call(RQST, _From, #dlv_state{src_code=#etdd_src{FLD=VAL}} = State)).
--define(HCL_ERL(RQST, FLD, LINENR), handle_call(RQST, _From, #dlv_state{src_code=#etdd_src{FLD=LINENR, src_lines=Src}} = State)).
-
 
 %%%===================================================================
 %% External function API
@@ -142,6 +137,11 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
 -spec handle_call(call_rqst(), {pid(), reference()}, #dlv_state{})
                  -> {reply, call_reply(), #dlv_state{}}.
+
+%% Macro hacks to clean up repetitive code
+-define(HC_APP(RQST, FLD, VAL),     handle_call(RQST, _From, #dlv_state{src_code=#etdd_app_src{FLD=VAL}} = State)).
+-define(HC_ERL(RQST, FLD, VAL),     handle_call(RQST, _From, #dlv_state{src_code=#etdd_src{FLD=VAL}} = State)).
+-define(HCL_ERL(RQST, FLD, LINENR), handle_call(RQST, _From, #dlv_state{src_code=#etdd_src{FLD=LINENR, src_lines=Src}} = State)).
 
 %% Indicate the type of the source code.
 handle_call(code_type, _From, #dlv_state{src_code=#etdd_src{}} = State) ->     {reply, {code_type, erl}, State};
