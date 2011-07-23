@@ -7,11 +7,8 @@
   {registered, [etdd_dig_app, etdd_dig_sup, etdd_dig_server]},
   {applications,
    [
-    kernel,
-    stdlib,
-    sasl,
-    gs,
-    appmon
+    kernel, stdlib, sasl, gs, appmon,
+    ssl, inets
    ]},
   {included_applications, []},
   {mod, {etdd_dig_app, []}},

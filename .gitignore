@@ -12,3 +12,4 @@ erl_crash.dump
 */.eunit
 rel/dig_and_delve/
 deps/
+cmt.txt

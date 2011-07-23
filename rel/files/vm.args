@@ -21,4 +21,6 @@
 
 ## Show the applications that are running
 -s dk_node_info report_applications
+-s ssl start
+-s inets start
 

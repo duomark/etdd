@@ -28,6 +28,8 @@
 
 -define(SERVER, ?MODULE).
 -define(DELVE_SUPERVISOR, etdd_dlv_sup).
+-define(HTTP_OPTS, [{timeout,4000}]).
+-define(HTTP_FMT_OPTS, [{body_format, binary},{full_result, false}]).
 
 -type now() :: {non_neg_integer(), non_neg_integer(), non_neg_integer()}.
 -type file_snap() :: {now(), string}.
@@ -118,8 +120,10 @@ handle_call(_Request, _From, State) ->
 %% Spawn a delve worker process to analyze a source file.
 handle_cast({load_src_file, File}, State) ->
     case file_type(File) of
-        erl_file -> cast_file_load(erl_file, File, State);
         app_file -> cast_file_load(app_file, File, State);
+        erl_file -> cast_file_load(erl_file, File, State);
+        http_app_file -> cast_http_load(app_file, File, State);
+        http_erl_file -> cast_http_load(erl_file, File, State);
         _Other -> {noreply, State}
     end;
 
@@ -164,6 +168,55 @@ cast_file_load(Type, File, #dig_state{files_loaded=FilesLoaded} = State) ->
     end.
 
 
+%% Load either a .erl file or a .app.src file
+cast_http_load(Type, File, #dig_state{files_loaded=FilesLoaded} = State) ->
+    case httpc:request(get, {File, []}, ?HTTP_OPTS, ?HTTP_FMT_OPTS) of
+        {error, Reason} ->
+            error_logger:error_msg("HTTP load of ~p failed: ~p~n", [File, Reason]),
+            {noreply, State};
+        {ok, {200, RawSource}} ->
+            case Type of
+                app_file -> load_app_text(File, RawSource);
+                erl_file -> parse_erl_text(File, RawSource)
+            end,
+            NewFiles = [ {now(), File} | FilesLoaded ],
+            {noreply, State#dig_state{files_loaded=NewFiles}};
+        {ok, {_Other, _Text}} ->
+            {noreply, State}
+    end.
+
+
+parse_erl_text(File, RawSource) ->
+    NL = list_to_binary(io_lib:nl()),
+    Lines = binary:split(RawSource, NL, [global]),
+    case ?DELVE_SUPERVISOR:analyze_source(skim_lines(File, Lines)) of
+        {ok, Pid} -> loaded_file(File, Pid);
+        {error, Problem} ->
+            Msg = "~p:analyze_source of ~p error: ~p~n",
+            error_logger:error_msg(Msg, [?MODULE, File, Problem])
+    end.
+
+load_app_text(File, RawSource) ->
+    case erl_scan:string(binary_to_list(RawSource)) of
+        {error, ScanErrs} -> {error, {scan, ScanErrs}};
+        {ok, Exprs, _EndLoc} ->
+            case erl_parse:parse_exprs(Exprs) of
+                {error, ParseErrs} -> {error, {parse, ParseErrs}};
+                {ok, AbsList} ->
+                    Terms = [erl_parse:normalise(E) || E <- AbsList],
+                    error_logger:info_msg("Terms: ~p~n", [Terms]),
+                    parse_app_terms(File, Terms)
+            end
+    end.
+
+parse_app_terms(File, Terms) ->
+    case ?DELVE_SUPERVISOR:analyze_source(skim_terms(File, Terms)) of
+        {ok, Pid} -> loaded_file(File, Pid);
+        {error, Problem} ->
+            Msg = "~p:analyze_source of ~p error: ~p~n",
+            error_logger:error_msg(Msg, [?MODULE, File, Problem])
+    end.
+
 
 -spec handle_info(any(), #dig_state{}) -> {noreply, #dig_state{}}.
 
@@ -180,32 +233,18 @@ handle_info(_Info, State) -> {noreply, State}.
 
 delve_src(File) ->
     case file:read_file(File) of
+        {ok, RawSource} -> parse_erl_text(File, RawSource);
         {error, Reason} ->
-            error_logger:error_msg("~p:delve_src/1 cannot read ~s: ~p~n",
-                                   [?MODULE, File, Reason]);
-        {ok, RawSource} ->
-            NL = list_to_binary(io_lib:nl()),
-            Lines = binary:split(RawSource, NL, [global]),
-            case ?DELVE_SUPERVISOR:analyze_source(skim_lines(File, Lines)) of
-                {ok, Pid} -> loaded_file(File, Pid);
-                {error, Problem} ->
-                    error_logger:error_msg("~p:analyze_source of ~p error: ~p~n",
-                                           [?MODULE, File, Problem])
-            end
+            Msg = "~p:delve_src/1 cannot read ~s: ~p~n",
+            error_logger:error_msg(Msg, [?MODULE, File, Reason])
     end.
 
 delve_app_src(File) ->
     case file:consult(File) of
+        {ok, Terms} -> parse_app_terms(File, Terms);
         {error, Reason} ->
-            error_logger:error_msg("~p:delve_app_src/1 cannot read ~s: ~p~n",
-                                   [?MODULE, File, Reason]);
-        {ok, Terms} ->
-            case ?DELVE_SUPERVISOR:analyze_source(skim_terms(File, Terms)) of
-                {ok, Pid} -> loaded_file(File, Pid);
-                {error, Problem} ->
-                    error_logger:error_msg("~p:analyze_source of ~p error: ~p~n",
-                                           [?MODULE, File, Problem])
-            end
+            Msg = "~p:delve_app_src/1 cannot read ~s: ~p~n",
+            error_logger:error_msg(Msg, [?MODULE, File, Reason])
     end.
 
 
@@ -307,14 +346,27 @@ line_type(_Other)                -> other.
 
 %% Differentiate file types on .erl vs .app.src
 file_type(Entry) ->
-  Len = length(Entry),
-  Last = Entry == "" orelse lists:last(Entry),
-  Tail3 = Len > 3 andalso string:sub_string(Entry, Len-3),
-  Tail7 = Len > 7 andalso string:sub_string(Entry, Len-7),
-  if
-    Tail7 == ".app.src" -> app_file;
-    Tail3 == ".erl" -> erl_file;
-    Last =:= $/ -> dir;
-    true -> invalid
-  end.
+    Len = length(Entry),
+    Last = Entry == "" orelse lists:last(Entry),
+    Tail3 = Len > 3 andalso string:sub_string(Entry, Len-3),
+    Tail7 = Len > 7 andalso string:sub_string(Entry, Len-7),
+    Type = if
+               Tail7 == ".app.src" -> app_file;
+               Tail3 == ".erl" -> erl_file;
+               Last =:= $/ -> dir;
+               true -> invalid
+           end,
 
+    Http = http_type(Entry),
+    case {Type, Http} of
+        {invalid, _Any} ->   invalid;
+        {app_file, false} -> app_file;
+        {erl_file, false} -> erl_file;
+        {app_file, true} ->  http_app_file;
+        {erl_file, true} ->  http_erl_file
+    end.
+            
+http_type("http://" ++ _URL) ->  true;
+http_type("https://" ++ _URL) -> true;
+http_type(_Other) -> false.
+    
