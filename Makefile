@@ -1,9 +1,6 @@
 all: deps compile
 
-deps: deps/evfs deps/yaws
-
-deps/evfs:
-	@rebar get-deps
+deps: deps/yaws
 
 deps/yaws:
 	@rebar get-deps
